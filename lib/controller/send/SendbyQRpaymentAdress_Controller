@@ -1,0 +1,72 @@
+import 'package:flutter/widgets.dart';
+import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:gradp2p/core/constants/routes.dart';
+
+abstract class SendbyQRpaymentAdressController extends GetxController {
+  sendMoney(String email, String amount);
+
+}
+
+class SendbyQRpaymentAdressControllerImp extends SendbyQRpaymentAdressController {
+  GlobalKey<FormState> formstate = GlobalKey<FormState>();
+
+
+  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
+
+  @override
+  sendMoney(String email, String amount) async {
+    try {
+      final SharedPreferences prefs = await _prefs;
+      final token = prefs.getString('token');
+
+      if (token == null) {
+        Get.snackbar("Error", "Token not found. Please login again.");
+        return;
+      }
+      
+      var headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token'
+      };
+
+      var request = http.Request('POST',
+          Uri.parse('https://smart-pay.onrender.com/api/v0/transactions/send'));
+      request.body = json.encode({
+        "smartEmail": email,
+        "amount": amount,
+      });
+      request.headers.addAll(headers);
+
+      http.StreamedResponse response = await request.send();
+
+      if (response.statusCode == 200) {
+        print(await response.stream.bytesToString());
+        Get.offAllNamed(AppRoute.Bottomnavbar);
+        Get.snackbar("succes", "send succesfully.");
+      } else {
+        print(response.reasonPhrase);
+       Get.snackbar("succes", "send Failed.");
+      
+        
+      }
+    } catch (e) {
+
+      Get.snackbar("Exception", e.toString());
+    }
+  }
+
+  @override
+  void onInit() {
+
+    super.onInit();
+  }
+
+  @override
+  void dispose() {
+   
+    super.dispose();
+  }
+}
